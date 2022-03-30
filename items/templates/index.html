@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    .addBtn{
+        height: 2rem;
+        width: 6rem;
+        border: none;
+        margin:2rem;
+    }
+    .container{
+        margin: 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        border: 1px solid black;
+    }
+    .items{
+        width: 90vw;
+        height: 60vh;
+        overflow-y: scroll;
+    }
+    .item{
+        height: 2rem;
+    }
+    .heading,.item,.add-product{
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+    }
+    .heading{
+        height: 3rem;
+        border-bottom: 1px solid black;
+    }
+    .add-product{
+        display: flex;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+</style>
+<body>
+    <button class="addBtn">Add Button</button>
+    <div class="container">
+        <div class="heading">
+            <div class="checkbox"></div>
+            <div class="product">PRODUCT</div>
+            <div class="sub-category">SUBCATEGORY</div>
+            <div class="category">CATAGORY</div>
+        </div>
+        <div class="items">
+            <!-- <div class="item">
+                <input type="checkbox">
+                <div>Macbook pro</div>
+                <div>Laptops</div>
+                <div>Electronics</div>
+            </div> -->
+        </div>  
+        <div class="add-product">
+            <button class="saveBtn">Save</button>
+            <input type="text" name="">
+            <select name="" id="choose-subcatagory">
+                <option value="choose-subcatagory">choose-subcatagory</option>
+                <!-- <option value="Shirt">Shirt</option>
+                <option value="T-Shirt">T-Shirt</option>
+                <option value="Trousers">Trousers</option>
+                <option value="Pant">Pant</option>
+                <option value="Mobile">Mobile</option>
+                <option value="Laptop">Laptop</option>
+                <option value="Headhphones">Headphones</option>
+                <option value="SmartWatches">SmartWatches</option> -->
+            </select>
+            <select name="" id="choose-catagory">
+                <option value="choose-catagory">choose-catagory</option>
+                <!-- <option value="Wearables">Wearables</option>
+                <option value="Electronics">Electronics</option> -->
+            </select>
+        </div>
+    </div>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    let addBtn = document.querySelector(".addBtn");
+    let addProductDiv = document.querySelector(".add-product");
+    addBtn.addEventListener("click",function(){
+        if(addProductDiv.style.display == 'none'){
+            addProductDiv.style.display = 'flex';
+        }else{
+            addProductDiv.style.display = 'none';
+        }
+    });
+    
+    async function fn(){
+        let res = await axios.get("http://localhost:8000/allcategories")
+        let data = res.data.split("$");
+        console.log(data);
+        let chooseCatagorySel = document.querySelector("#choose-catagory");
+        let chooseSubcatagorySel = document.querySelector("#choose-subcatagory");
+        let items = document.querySelector(".items");
+        items.innerHTML = "";
+        for(let i=0;i<data.length-1;i++){
+            let opt = document.createElement("option");
+            opt.setAttribute("value",data[i]);
+            opt.innerText = data[i];
+            chooseCatagorySel.appendChild(opt);
+            let subcatagoryRes = await axios.get(`http://localhost:8000/${data[i]}/allsubcategory`);
+            let subcatogoryData = subcatagoryRes.data.split("$");
+            for(let j=0;j<subcatogoryData.length-1;j++){
+                let subOpt = document.createElement("option");
+                subOpt.setAttribute("value",subcatogoryData[j]);
+                subOpt.innerText = subcatogoryData[j];
+                chooseSubcatagorySel.appendChild(subOpt);
+                let productRes = await axios.get(`http://localhost:8000/${subcatogoryData[j]}/getsubcategoryproduct`)
+                let productData = productRes.data.split("$");
+                // console.log(productData);
+                for(let k=0;k<productData.length-1;k++){
+                    // <div class="item">
+                    //     <input type="checkbox">
+                    //     <div>Macbook pro</div>
+                    //     <div>Laptops</div>
+                    //     <div>Electronics</div>
+                    // </div>
+                    let item = document.createElement("div");
+                    item.setAttribute("class","item");
+                    item.innerHTML = `<input type="checkbox">
+                                        <div>${productData[k]}</div>
+                                        <div>${subcatogoryData[j]}</div>
+                                        <div>${data[i]}</div>`
+                    items.appendChild(item);
+                }
+            }
+        }
+    };
+    fn();
+    let saveBtn = document.querySelector(".saveBtn");
+    saveBtn.addEventListener("click",async function(){
+        let input = addProductDiv.querySelector("input");
+        let inputValue = input.value;
+        if(inputValue.length == 0){
+            return;
+        }
+        let sub = document.querySelector("#choose-subcatagory");
+        let subOpt = sub.options[sub.selectedIndex].text;
+        if(subOpt == 'choose-subcatagory'){
+            return;
+        }
+        let cat = document.querySelector("#choose-catagory");
+        let catOpt = cat.options[cat.selectedIndex].text;
+        if(catOpt == 'choose-catagory'){
+            return;
+        }
+        let obj = {
+                    "category":catOpt,
+                    "subCategory":subOpt,
+                    "productName":inputValue
+                }
+        let req = await axios.post("http://localhost:8000/addProduct",obj);
+        input.value = "";
+        fn();
+    })
+</script>
+</html>
